@@ -86,15 +86,29 @@ class MainWindow:
             self.ui.tableWidget.setItem(i, 2, QTableWidgetItem(str(self.max_inten[i])))
 
     def load_data_2(self):
-        self.ui.tableWidget_2.setRowCount(11)
+        self.ui.tableWidget_2.setRowCount(12)
+        nul = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "&"]
         first = ["v(OH)", "v(OH)", "v_as(CH_2) or v_s(CH_3) or v_??(СР_2) or b(CH_3)", "v(CO_2)", "b_(H-O-H)",
-                 "v_as(TO_4)", "v_as(YO_4)", "v_as(TO_4)", "v_s(TO_4)", "v_s(SiOSi)+b(OSiO), v(AL-OH)", "b(TO_4)"]
-        second = ["3600-3700", ]
-        for i in range(11):
-            #self.ui.tableWidget_2.setItem(i, 0, QTableWidgetItem(str(self.integ_inten[i])))
+                 "v_as(TO_4)", "v_as(YO_4)", "v_as(TO_4)", "v_s(TO_4)", "v_s(SiOSi)+b(OSiO), v(AL-OH)", "b(TO_4)", "???"]
+        second = ["3600-3700", "3200-3600", "2855", "2300", "1630-1635", "1225-1230",
+                  "1108-1110", "960-970", "800", "550", "450", "???-???"]
+        third = ["Кислотные ОН-группы мостиковых гидроксилов  Al-OH-O или Si-OH-Al (центры Бренстеда)",
+                 "ОН-группы каркасных Si-OH группировок, либо молекулы H2O",
+                 "Остатки органического темплата (TPAOH) в полостях каркаса TS (асимметричные –CH2, "
+                 "симметричные –CH3 и растягивающие  –CH2 колебания; деформационные колебания –CH3)",
+                 "Сорбированные молекулы CO2 в порах с наибольшими размерами на поверхности",
+                 "Деформационные колебания H–O–H",
+                 "Асимметричные валентные колебания внутри TS",
+                 "Асимметричные валентные колебания внутри тетраэдров ТO4",
+                 "Титан в каркасе TS",
+                 "Симметричные валентные колебания внутри тетраэдров ТO4",
+                 "Указывает на принадлежность цеолита к семейству ZSM",
+                 "Деформационные колебания связей  Т–O", "не определено"]
+        for i in range(12):
+            self.ui.tableWidget_2.setItem(i, 0, QTableWidgetItem(str(nul[i])))
             self.ui.tableWidget_2.setItem(i, 1, QTableWidgetItem(str(first[i])))
-            #self.ui.tableWidget_2.setItem(i, 2, QTableWidgetItem(str(self.integ_inten[i])))
-            #self.ui.tableWidget_2.setItem(i, 3, QTableWidgetItem(str(self.max_inten[i])))
+            self.ui.tableWidget_2.setItem(i, 2, QTableWidgetItem(str(second[i])))
+            self.ui.tableWidget_2.setItem(i, 3, QTableWidgetItem(str(third[i])))
 
     def open_file(self):
         res, okPressed = QFileDialog.getOpenFileName(self.ui.widget_6, 'Open file', '/User', 'Data File (*.dat *.asc *.txt)')
@@ -168,10 +182,30 @@ class MainWindow:
         for i in range(len(self.ext)):
             ax3.text(self.ext[i], self.fun(self.ext)[i] + 0.02, str(i + 1), ha='center')
         for i in range(len(self.minim)):
-            if 4500 > self.minim[i] > 3600:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str(11) + str("*"), ha='center')
+            if 3700 > self.minim[i] > 3600:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("A"), ha='center')
+            elif 3600 > self.minim[i] > 3200:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("B"), ha='center')
+            elif 2856 > self.minim[i] > 2854:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("C"), ha='center')
+            elif 2301 > self.minim[i] > 2299:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("D"), ha='center')
+            elif 1635 > self.minim[i] > 1630:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("E"), ha='center')
+            elif 1230 > self.minim[i] > 1225:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("F"), ha='center')
+            elif 1110 > self.minim[i] > 1108:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("G"), ha='center')
+            elif 970 > self.minim[i] > 960:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("H"), ha='center')
+            elif 801 > self.minim[i] > 799:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("I"), ha='center')
+            elif 551 > self.minim[i] > 549:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("J"), ha='center')
+            elif 451 > self.minim[i] > 449:
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("K"), ha='center')
             else:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str(i + 1), ha='center')
+                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("&"), ha='center')
         ax3.grid()
         self.canvas3.draw()
 #*******************************************************
