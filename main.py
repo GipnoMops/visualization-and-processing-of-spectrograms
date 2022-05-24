@@ -7,6 +7,7 @@ from scipy import integrate
 from scipy.ndimage import gaussian_filter1d
 from scipy.interpolate import interp1d
 from interface import Ui_MainWindow
+from error_interface import Ui_ErrorWindow
 import numpy as np
 import sys
 
@@ -41,6 +42,9 @@ class MainWindow:
         self.ui.add_point_btn.clicked.connect(self.add_point)
         self.ui.del_point_btn.clicked.connect(self.del_point)
 
+        self.ui.add_stand_btn.clicked.connect(self.add_stand)
+        self.ui.dell_stand_btn.clicked.connect(self.del_stand)
+
         self.figure1 = plt.figure()
         self.canvas1 = FigureCanvas(self.figure1)
         self.toolbar1 = NavigationToolbar(self.canvas1, self.ui.widget_6)
@@ -56,6 +60,9 @@ class MainWindow:
         self.ui.tableWidget.setColumnWidth(0, 130)
         self.ui.tableWidget.setColumnWidth(1, 250)
         self.ui.tableWidget.setColumnWidth(2, 250)
+        self.ui.tableWidget.setColumnWidth(3, 200)
+        self.ui.tableWidget.setColumnWidth(4, 200)
+        self.ui.tableWidget.setColumnWidth(5, 300)
         self.integ_inten = list()
         self.max_inten = list()
 
@@ -64,8 +71,22 @@ class MainWindow:
         self.ui.tableWidget_2.setColumnWidth(2, 250)
         self.ui.tableWidget_2.setColumnWidth(3, 300)
 
+        self.stand_mark = list
+        self.stand_name = list
+        self.stand_vel = list
+        self.stand_descrip = list
+
+    def error(self):
+        self.ErrorWindow = QMainWindow()
+        self.error_ui = Ui_ErrorWindow()
+        self.error_ui.setupUi(self.ErrorWindow)
+        self.ErrorWindow.show()
 
     def change_num_med(self):
+        if self.way == '':
+            self.error()
+            return
+
         res, okPressed = QInputDialog.getInt(self.ui.widget, "Изменить параметр апроксимации", "Percentage:",
                                              self.n_for_med, 2, 1000, 1)
         self.n_for_med = res
@@ -73,6 +94,10 @@ class MainWindow:
             self.drow_plots()
 
     def change_num_of_points(self):
+        if self.way == '':
+            self.error()
+            return
+
         res, okPressed = QInputDialog.getInt(self.ui.widget, "Изменить гладкость графика", "Percentage:",
                                              self.num_of_points, 100, 10000000, 10)
         self.num_of_points = res
@@ -80,35 +105,80 @@ class MainWindow:
             self.drow_plots()
 
     def load_data(self):
-        self.ui.tableWidget.setRowCount(len(self.integ_inten))
-        for i in range(len(self.integ_inten)):
-            self.ui.tableWidget.setItem(i, 1, QTableWidgetItem(str(self.integ_inten[i])))
-            self.ui.tableWidget.setItem(i, 2, QTableWidgetItem(str(self.max_inten[i])))
+        self.ui.tableWidget.setRowCount(len(self.minim))
+
+        for i in range(len(self.minim)):
+            self.ui.tableWidget.setItem(i, 3, QTableWidgetItem(str("{:.4f}".format(self.minim[i]))))
+
+        for i in range(len(self.minim)):
+            for j in range(len(self.stand_vel)):
+                if self.stand_vel[j][0] < self.minim[i] < self.stand_vel[j][1]:
+                    self.ui.tableWidget.setItem(i, 0, QTableWidgetItem(str(self.stand_mark[j])))
+                    self.ui.tableWidget.setItem(i, 3, QTableWidgetItem(str("{:.4f}".format(self.minim[i]))))
+                    self.ui.tableWidget.setItem(i, 4, QTableWidgetItem(str(self.stand_vel[j][0]) + "-" + str(self.stand_vel[j][1])))
+                    self.ui.tableWidget.setItem(i, 5, QTableWidgetItem(str(self.stand_descrip[j])))
+                    break
+                elif j == len(self.stand_vel) - 1:
+                    self.ui.tableWidget.setItem(i, 0, QTableWidgetItem(str("&")))
+                    self.ui.tableWidget.setItem(i, 3, QTableWidgetItem(str("{:.4f}".format(self.minim[i]))))
+                    self.ui.tableWidget.setItem(i, 4, QTableWidgetItem(str("не определено")))
+                    self.ui.tableWidget.setItem(i, 5, QTableWidgetItem(str("не определно")))
+
+        for i in range(len(self.minim)):
+            for k in range(len(self.ext)):
+                if (k == 0 and self.minim[i] < self.ext[k]) or(k == (len(self.ext) - 1) and self.minim[i] > self.ext[k]):
+                    self.ui.tableWidget.setItem(i, 1, QTableWidgetItem(str("не определено")))
+                    self.ui.tableWidget.setItem(i, 2, QTableWidgetItem(str("не определено")))
+                    break
+                if k != 0 and self.minim[i] < self.ext[k] and self.minim[i] > self.ext[k - 1]:
+                    self.ui.tableWidget.setItem(i, 1, QTableWidgetItem(str("{:.4f}".format(self.integ_inten[k - 1]))))
+                    self.ui.tableWidget.setItem(i, 2, QTableWidgetItem(str("{:.4f}".format(self.max_inten[k - 1]))))
+                    break
+
 
     def load_data_2(self):
-        self.ui.tableWidget_2.setRowCount(12)
-        nul = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "&"]
-        first = ["v(OH)", "v(OH)", "v_as(CH_2) or v_s(CH_3) or v_??(СР_2) or b(CH_3)", "v(CO_2)", "b_(H-O-H)",
-                 "v_as(TO_4)", "v_as(YO_4)", "v_as(TO_4)", "v_s(TO_4)", "v_s(SiOSi)+b(OSiO), v(AL-OH)", "b(TO_4)", "???"]
-        second = ["3600-3700", "3200-3600", "2855", "2300", "1630-1635", "1225-1230",
-                  "1108-1110", "960-970", "800", "550", "450", "???-???"]
-        third = ["Кислотные ОН-группы мостиковых гидроксилов  Al-OH-O или Si-OH-Al (центры Бренстеда)",
-                 "ОН-группы каркасных Si-OH группировок, либо молекулы H2O",
-                 "Остатки органического темплата (TPAOH) в полостях каркаса TS (асимметричные –CH2, "
-                 "симметричные –CH3 и растягивающие  –CH2 колебания; деформационные колебания –CH3)",
-                 "Сорбированные молекулы CO2 в порах с наибольшими размерами на поверхности",
-                 "Деформационные колебания H–O–H",
-                 "Асимметричные валентные колебания внутри TS",
-                 "Асимметричные валентные колебания внутри тетраэдров ТO4",
-                 "Титан в каркасе TS",
-                 "Симметричные валентные колебания внутри тетраэдров ТO4",
-                 "Указывает на принадлежность цеолита к семейству ZSM",
-                 "Деформационные колебания связей  Т–O", "не определено"]
-        for i in range(12):
-            self.ui.tableWidget_2.setItem(i, 0, QTableWidgetItem(str(nul[i])))
-            self.ui.tableWidget_2.setItem(i, 1, QTableWidgetItem(str(first[i])))
-            self.ui.tableWidget_2.setItem(i, 2, QTableWidgetItem(str(second[i])))
-            self.ui.tableWidget_2.setItem(i, 3, QTableWidgetItem(str(third[i])))
+        self.ui.tableWidget_2.setRowCount(len(self.stand_mark))
+
+        for i in range(len(self.stand_mark)):
+            self.ui.tableWidget_2.setItem(i, 0, QTableWidgetItem(str(self.stand_mark[i])))
+            self.ui.tableWidget_2.setItem(i, 1, QTableWidgetItem(str(self.stand_name[i])))
+            self.ui.tableWidget_2.setItem(i, 2, QTableWidgetItem(str(self.stand_vel[i][0])
+                                                                 + "-" +str(self.stand_vel[i][1])))
+            self.ui.tableWidget_2.setItem(i, 3, QTableWidgetItem(str(self.stand_descrip[i])))
+
+    def add_stand(self):
+        if self.way == '':
+            self.error()
+            return
+
+        res1, ok1 = QInputDialog.getText(self.ui.widget, "Добавить обозначение на графике",
+                                         "Введите обозначение на графике:")
+        res2, ok2 = QInputDialog.getText(self.ui.widget, "Добавить v", "Введите v:")
+        res3, ok3 = QInputDialog.getDouble(self.ui.widget, "Добавить минимум диапозона", "Введите минимум диапозона:")
+        res4, ok4 = QInputDialog.getDouble(self.ui.widget, "Добавить максимум диапозона", "введите максимум диапозона:")
+        res5, ok5 = QInputDialog.getText(self.ui.widget, "Добавить отнисение полос", "Введите отнисение полос:")
+        if ok1 and ok2 and ok3 and ok4 and ok5:
+            self.stand_mark.append(res1)
+            self.stand_name.append(res2)
+            self.stand_vel.append((res3, res4))
+            self.stand_descrip.append(res5)
+            self.load_data_2()
+            self.change_extr(0, 0)
+
+    def del_stand(self):
+        if self.way == '':
+            self.error()
+            return
+
+        res, okPressed = QInputDialog.getInt(self.ui.widget, "Удалить эталон", "Номер эталона:",
+                                             1, 1, len(self.stand_mark), 1)
+        if okPressed:
+            self.stand_mark.pop(res - 1)
+            self.stand_name.pop(res - 1)
+            self.stand_vel.pop(res - 1)
+            self.stand_descrip.pop(res - 1)
+            self.load_data_2()
+            self.change_extr(0, 0)
 
     def open_file(self):
         res, okPressed = QFileDialog.getOpenFileName(self.ui.widget_6, 'Open file', '/User', 'Data File (*.dat *.asc *.txt)')
@@ -117,15 +187,23 @@ class MainWindow:
             self.drow_plots()
 
     def add_point(self):
-        res, okPressed = QInputDialog.getDouble(self.ui.widget, "Добавить точку", "Координата х точки:", 10.05, 0.00, 5000.00, 2)
+        if self.way == '':
+            self.error()
+            return
+
+        res, okPressed = QInputDialog.getDouble(self.ui.widget, "Добавить точку", "Координата х точки:",
+                                                min(self.med_x) + 0.01, min(self.med_x), max(self.med_x) - 0.01, 2)
         if okPressed:
             self.change_extr(res, 1)
 
     def del_point(self):
-        res, okPressed = QInputDialog.getInt(self.ui.widget, "Удалить точку", "Номер точки:", 28, 0, 1000, 1)
+        if self.way == '':
+            self.error()
+            return
+
+        res, okPressed = QInputDialog.getInt(self.ui.widget, "Удалить точку", "Номер точки:", 1, 1, len(self.ext), 1)
         if okPressed:
             self.change_extr(res, 2)
-
 
     def drow_plots(self):
         self.ext.clear()
@@ -145,6 +223,8 @@ class MainWindow:
             y_coord.append(y)
         ax1.plot(x_coord, y_coord, color='b')
         ax1.grid()
+        ax1.axes.set_ylabel('y', fontsize=26)
+        ax1.axes.set_xlabel('x', fontsize=26)
         self.canvas1.draw()
 #*******************************************************
 
@@ -177,37 +257,50 @@ class MainWindow:
         for i in minim:
             self.minim.append(t[i])
 
+
         ax3.plot(t, self.fun(t))
         ax3.plot(self.ext, self.fun(self.ext), color='r')
         for i in range(len(self.ext)):
             ax3.text(self.ext[i], self.fun(self.ext)[i] + 0.02, str(i + 1), ha='center')
+
+# *******************************************************
+
+        self.stand_mark = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "&"]
+        self.stand_name = ["v(OH)", "v(OH)", "v_as(CH_2) or v_s(CH_3) or v_??(СР_2) or b(CH_3)", "v(CO_2)",
+                           "b_(H-O-H)",
+                           "v_as(TO_4)", "v_as(YO_4)", "v_as(TO_4)", "v_s(TO_4)", "v_s(SiOSi)+b(OSiO), v(AL-OH)",
+                           "b(TO_4)",
+                           "???"]
+        self.stand_vel = [(3600, 3700), (3028, 3600), (2578, 3028), (1968, 2578), (1430, 1968), (1168, 1430),
+                          (1039, 1168), (880, 1039), (675, 880), (500, 675), (420, 500), (0, 0)]
+        self.stand_descrip = ["Кислотные ОН-группы мостиковых гидроксилов  Al-OH-O или Si-OH-Al (центры Бренстеда)",
+                              "ОН-группы каркасных Si-OH группировок, либо молекулы H2O",
+                              "Остатки органического темплата (TPAOH) в полостях каркаса TS (асимметричные –CH2, "
+                              "симметричные –CH3 и растягивающие  –CH2 колебания; деформационные колебания –CH3)",
+                              "Сорбированные молекулы CO2 в порах с наибольшими размерами на поверхности",
+                              "Деформационные колебания H–O–H",
+                              "Асимметричные валентные колебания внутри TS",
+                              "Асимметричные валентные колебания внутри тетраэдров ТO4",
+                              "Титан в каркасе TS",
+                              "Симметричные валентные колебания внутри тетраэдров ТO4",
+                              "Указывает на принадлежность цеолита к семейству ZSM",
+                              "Деформационные колебания связей  Т–O", "не определено"]
+#*******************************************************
         for i in range(len(self.minim)):
-            if 3700 > self.minim[i] > 3600:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("A"), ha='center')
-            elif 3600 > self.minim[i] > 3200:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("B"), ha='center')
-            elif 2856 > self.minim[i] > 2854:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("C"), ha='center')
-            elif 2301 > self.minim[i] > 2299:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("D"), ha='center')
-            elif 1635 > self.minim[i] > 1630:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("E"), ha='center')
-            elif 1230 > self.minim[i] > 1225:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("F"), ha='center')
-            elif 1110 > self.minim[i] > 1108:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("G"), ha='center')
-            elif 970 > self.minim[i] > 960:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("H"), ha='center')
-            elif 801 > self.minim[i] > 799:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("I"), ha='center')
-            elif 551 > self.minim[i] > 549:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("J"), ha='center')
-            elif 451 > self.minim[i] > 449:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("K"), ha='center')
-            else:
-                ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str("&"), ha='center')
+            for j in range(len(self.stand_vel)):
+                if self.stand_vel[j][0] < self.minim[i] < self.stand_vel[j][1]:
+                    ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, self.stand_mark[j], ha='center')
+                    break
+                elif j == len(self.stand_vel) - 1:
+                    ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, "&", ha='center')
+
         ax3.grid()
+        ax3.axes.set_ylabel('y', fontsize=26)
+        ax3.axes.set_xlabel('x', fontsize=26)
+        # ax3.rcParams.labelsize()
+
         self.canvas3.draw()
+
 #*******************************************************
 
         self.integ()
@@ -215,7 +308,6 @@ class MainWindow:
         self.load_data()
         self.load_data_2()
         inFile.close()
-
 
     def change_extr(self, n, k):
         self.integ_inten.clear()
@@ -244,9 +336,20 @@ class MainWindow:
             ax3.text(self.ext[i], self.fun(self.ext)[i] + 0.02, str(i + 1), ha='center')
 
         for i in range(len(self.minim)):
-            ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, str(i + 1), ha='center')
+            for j in range(len(self.stand_vel)):
+                if self.stand_vel[j][0] < self.minim[i] < self.stand_vel[j][1]:
+                    ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, self.stand_mark[j], ha='center')
+                    break
+                elif j == len(self.stand_vel) - 1:
+                    ax3.text(self.minim[i], self.fun(self.minim)[i] - 0.02, "&", ha='center')
+
+        #ax3.ylabel('y', fontsize=20)
+        #ax3.rcParams.labelsize()
 
         ax3.grid()
+        ax3.axes.set_ylabel('y', fontsize=26)
+        ax3.axes.set_xlabel('x', fontsize=26)
+
         self.canvas3.draw()
 
         self.integ()
@@ -277,7 +380,6 @@ class MainWindow:
                 if y(t[j]) - self.fun(t[j]) > Max:
                     Max = y(t[j]) - self.fun(t[j])
             self.max_inten.append(Max)
-
 
     def show(self):
         self.main_win.show()
